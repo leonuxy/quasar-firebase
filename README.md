@@ -1,6 +1,6 @@
-# MADC v2 Web (madc-web)
+# Quasar + Firebase v2 Web
 
-MADC Web, Quasar + Firebase
+Web, Quasar + Firebase
 
 ## Install the dependencies
 ```bash
