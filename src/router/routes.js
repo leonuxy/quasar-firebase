@@ -1,8 +1,23 @@
 const routes = [
   {
+    path: "/login",
+    component: () => import("src/pages/LoginPage.vue"),
+  },
+  {
     path: "/",
-    component: () => import("layouts/MainLayout.vue"),
-    children: [{ path: "/", component: () => import("pages/IndexPage.vue") }],
+    component: () => import("layouts/UserLayout.vue"),
+    children: [
+      {
+        path: "/index",
+        name: "list-sample",
+        component: () => import("pages/IndexPage.vue"),
+      },
+      {
+        path: "/contact-us",
+        name: "contact-us",
+        component: () => import("src/pages/ContactUs.vue"),
+      },
+    ],
   },
 
   // Always leave this as last one,
