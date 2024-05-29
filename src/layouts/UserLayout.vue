@@ -27,13 +27,26 @@
         "
       >
         <q-list padding>
-          <q-item clickable v-ripple to="/index">
+          <!-- <q-item clickable v-ripple to="/">
             <q-item-section avatar>
-              <q-icon name="inbox" />
+              <q-icon name="dashboard" />
             </q-item-section>
 
-            <q-item-section> List Sample </q-item-section>
+            <q-item-section> Dashboard </q-item-section>
+          </q-item> -->
+          <q-item clickable v-ripple to="/index">
+            <q-item-section avatar>
+              <q-icon name="view_list" />
+            </q-item-section>
+            <q-item-section> List Request </q-item-section>
           </q-item>
+          <!-- <q-item clickable v-ripple to="/form_request_sample">
+            <q-item-section avatar>
+              <q-icon name="feed" />
+            </q-item-section>
+
+            <q-item-section> Form Request Sample </q-item-section>
+          </q-item> -->
 
           <q-item clickable v-ripple to="/contact-us">
             <q-item-section avatar>

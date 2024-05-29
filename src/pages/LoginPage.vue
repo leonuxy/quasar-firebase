@@ -56,8 +56,7 @@
               label="LOGIN"
               style="width: 100%"
               class="q-px-md q-mb-xs"
-              type="a"
-              to="/index"
+              type="submit"
             />
           </div>
         </q-card>
@@ -67,22 +66,22 @@
 </template>
 
 <script setup lang="ts">
-// import { ref } from 'vue';
-// import { LocalStorage } from 'quasar';
-// import { useAuthStore } from 'src/stores/auth';
+import { ref } from "vue";
+import { LocalStorage } from "quasar";
+import { useAuthStore } from "src/stores/auth";
 
-// const email = ref("");
-// const password = ref("");
-// const checkbox = ref(false);
+const email = ref("");
+const password = ref("");
+const checkbox = ref(false);
 
-// const { login } = useAuthStore();
-// const handleLogin = () =>
-//   login({
-//     username: email.value,
-//     password: password.value,
-//     rememberMe: checkbox.value,
-//   });
-
+const { login } = useAuthStore();
+const handleLogin = () =>
+  login({
+    username: email.value,
+    password: password.value,
+    rememberMe: checkbox.value,
+  });
+console.log(email.value);
 // LocalStorage.remove("area-mapping");
 // LocalStorage.remove("top-customer");
 // LocalStorage.remove("top-customer2");

@@ -9,8 +9,8 @@
       :rows-per-page-options="[100]"
       :virtual-scroll-sticky-size-start="48"
       row-key="index"
-      title="List Request"
       selection="multiple"
+      title="List Sample"
       :rows="rows"
       :columns="columns"
       ><template v-slot:top-right>
@@ -31,55 +31,6 @@
           color="primary"
           @click="dialogSearch = true"
         />
-        <q-btn
-          class="q-ml-md"
-          label="Request New Sample"
-          color="green-9"
-          @click="dialogNew = true"
-        />
-      </template>
-      <template v-slot:body-cell-action="props">
-        <!-- test -->
-        <!-- cell-[name/field] -->
-        <q-td :props="props">
-          <!-- <div> -->
-          <q-btn
-            v-if="props.row.status == 'On Requested'"
-            size="sm"
-            class="q-ml-md"
-            label="Approve"
-            color="primary"
-          />
-          <q-btn
-            v-if="props.row.status == 'On Requested'"
-            size="sm"
-            class="q-ml-md"
-            label="Reject"
-            color="red"
-          />
-          <!-- <q-badge color="primary" label="test" /> -->
-          <!-- </div> -->
-        </q-td>
-      </template>
-      <template v-slot:body-cell-area_request="props">
-        <!-- test -->
-        <!-- cell-[name/field] -->
-        <q-td :props="props">
-          <!-- <div> -->
-          <q-input
-            v-model.number="props.row[props.col.name]"
-            input-class="text-right"
-            type="number"
-            dense
-            borderless
-            :disable="
-              props.row.status == 'Approved' ||
-              props.row.status == 'On Requested'
-            "
-          />
-          <!-- <q-badge color="primary" label="test" /> -->
-          <!-- </div> -->
-        </q-td>
       </template>
     </q-table>
     <!-- :filter="filter" -->
@@ -98,42 +49,6 @@
       </template> -->
   </div>
 
-  <q-dialog v-model="dialogNew">
-    <q-card style="width: 700px; max-width: 80vw">
-      <q-card-section class="row items-center q-pb-none">
-        <div class="text-h6">Form New Request Sample</div>
-        <q-space />
-        <q-btn icon="close" flat round dense v-close-popup />
-      </q-card-section>
-
-      <q-card-section>
-        <q-input
-          class="q-mt-sm"
-          outlined
-          v-model="text"
-          label="Applicant's Name"
-        />
-        <q-input class="q-mt-sm" outlined v-model="text" label="Department" />
-        <q-input class="q-mt-sm" outlined v-model="text" label="Type Product" />
-        <q-input class="q-mt-sm" outlined v-model="text" label="Qty" />
-        <q-input class="q-mt-sm" outlined v-model="text" label="Area Request" />
-        <q-input
-          class="q-mt-sm"
-          outlined
-          v-model="text"
-          label="Purpose Request"
-        />
-        <q-input class="q-mt-sm" outlined v-model="text" label="Request Qty" />
-      </q-card-section>
-
-      <q-separator />
-
-      <q-card-actions align="right">
-        <q-btn flat @click="closeDialogNew">Back</q-btn>
-        <q-btn color="green-9" @click="closeDialogNew">Create</q-btn>
-      </q-card-actions>
-    </q-card>
-  </q-dialog>
   <q-dialog v-model="dialogSearch">
     <q-card style="width: 700px; max-width: 80vw">
       <q-card-section class="row items-center q-pb-none">
@@ -166,7 +81,7 @@
 
       <q-card-actions align="right">
         <q-btn flat @click="closeDialogSearch">Back</q-btn>
-        <q-btn color="primary" @click="closeDialogSearch">Search</q-btn>
+        <q-btn color="green-9" @click="closeDialogSearch">Search</q-btn>
       </q-card-actions>
     </q-card>
   </q-dialog>
@@ -176,20 +91,6 @@
 import { ref } from "vue";
 
 const columns = [
-  {
-    name: "action",
-    align: "center",
-    label: "Action",
-    field: "action",
-    sortable: false,
-  },
-  {
-    name: "status",
-    align: "center",
-    label: "Status",
-    field: "status",
-    sortable: true,
-  },
   {
     name: "index",
     label: "IDS",
@@ -250,6 +151,13 @@ const columns = [
     field: "purpose_request",
     sortable: true,
   },
+  {
+    name: "status",
+    align: "center",
+    label: "Status",
+    field: "status",
+    sortable: true,
+  },
 ];
 
 const seed = [
@@ -261,7 +169,7 @@ const seed = [
     qty: 2,
     area_request: 5,
     purpose_request: "Checking Quality",
-    status: "Rejected",
+    status: "Approved",
   },
   {
     name: "Jul W",
@@ -271,7 +179,7 @@ const seed = [
     qty: 1,
     area_request: 5,
     purpose_request: "Checking Quality",
-    status: "On Requested",
+    status: "On Reviewed",
   },
   {
     name: "Jul W",
@@ -281,7 +189,7 @@ const seed = [
     qty: 13,
     area_request: 5,
     purpose_request: "Checking Quality",
-    status: "On Request",
+    status: "On Reviewed",
   },
   {
     name: "Arif H",
@@ -472,7 +380,6 @@ export default {
       text: ref(""),
       filter: ref([]),
       dialogSearch: ref(false),
-      dialogNew: ref(false),
       selected: ref([]),
       pagination: ref({
         rowsPerPage: 100,
@@ -482,9 +389,6 @@ export default {
   methods: {
     closeDialogSearch() {
       this.dialogSearch = false;
-    },
-    closeDialogNew() {
-      this.dialogNew = false;
     },
   },
 };
