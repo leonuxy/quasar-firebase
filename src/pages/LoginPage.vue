@@ -19,13 +19,13 @@
 
           <q-input
             outlined
-            v-model="email"
-            placeholder="Email"
+            v-model="username"
+            placeholder="username"
             dense
             class="q-mx-md inputFieldLogin"
           >
             <template v-slot:append>
-              <q-icon name="email" />
+              <q-icon name="username" />
             </template>
           </q-input>
           <q-input
@@ -70,18 +70,17 @@ import { ref } from "vue";
 import { LocalStorage } from "quasar";
 import { useAuthStore } from "src/stores/auth";
 
-const email = ref("");
+const username = ref("");
 const password = ref("");
 const checkbox = ref(false);
 
 const { login } = useAuthStore();
 const handleLogin = () =>
   login({
-    username: email.value,
+    username: username.value,
     password: password.value,
     rememberMe: checkbox.value,
   });
-console.log(email.value);
 // LocalStorage.remove("area-mapping");
 // LocalStorage.remove("top-customer");
 // LocalStorage.remove("top-customer2");

@@ -3,23 +3,25 @@ import { Loading, LocalStorage, Notify } from "quasar";
 import { api } from "src/boot/axios";
 // import { supabase } from "src/boot/supabase";
 
+import { db } from "src/boot/firebase";
+import { QuerySnapshot, collection, getDocs } from "firebase/firestore";
 /** Interface for User */
 export interface User {
-  /** User's ID */
-  id: string;
-
-  /** User's name */
-  name: string;
-
-  /** User's name */
-  username: string;
-
-  /** User's email */
-  email: string;
+  seller_id: string;
+  seller_area: string;
+  seller_name: string;
+  seller_pass: string;
+  seller_picture: string;
+  seller_phone: string;
+  seller_org: string;
+  seller_user: string;
 }
+
+export interface UserLevel {}
 
 /** Possible User Type in Store */
 export type UserVar = User | null;
+export type UserLevelVar = UserLevel | null;
 
 /** Authentication Token in Store */
 export type TokenData = string;
@@ -27,13 +29,13 @@ export type TokenVar = TokenData | null;
 
 /** Local Storage Name for Token */
 export const tokenStorageName = "token";
-const handleTokenResponse = (response: {
+const handleEmailToken = (response: {
   data: {
-    data: string;
+    email: string;
   };
 }): TokenData => {
   const result = response.data;
-  return result.data;
+  return result.email;
 };
 
 /** Interface for Roles */
@@ -65,17 +67,18 @@ const handleError = (error: any) => {
 
 export const useAuthStore = defineStore("user", {
   state: (): {
-    // token: TokenVar;
+    token: TokenVar;
     user: UserVar;
+    userLevel: UserLevelVar;
     // roles: Roles;
     // permissions: Permissions;
     // roleCompanies: RoleCompanies;
     // roleAreas: RoleAreas;
     // roleClients: RoleClients;
   } => ({
-    // token: null,
+    token: null,
     user: null,
-    // roles: {},
+    userLevel: {},
     // permissions: {},
     // roleCompanies: [],
     // roleAreas: [],
@@ -106,11 +109,11 @@ export const useAuthStore = defineStore("user", {
       });
       return api
         .post("/login", {
-          email: username,
+          username: username,
           password: password,
           remember_me: rememberMe,
         })
-        .then((response) => this.setToken(handleTokenResponse(response)))
+        .then((response) => this.setToken(handleEmailToken(response)))
         .then(() => this.router.go(0))
         .catch(handleError);
     },
@@ -122,68 +125,83 @@ export const useAuthStore = defineStore("user", {
           message: "Logging out...",
         });
       }
-
-      return api
-        .post("/logout")
-        .then(() => this.setToken(null))
-        .then(() => this.router.go(0))
-        .catch(handleError);
+      this.setToken(null);
+      this.router.go(0);
     },
 
+    async fetchUserLevel() {
+      try {
+        const collectionRef = collection(
+          db,
+          "userlevel/" + this.user.seller_id + "/" + this.user.seller_id
+        );
+        const querySnapshot = await getDocs(collectionRef);
+        this.userLevel = querySnapshot.docs.map((doc) => ({
+          id: doc.id,
+          ...doc.data(),
+        }));
+      } catch (error) {
+        console.error("Error fetching data: ", error);
+      }
+    },
     /**
      * Fetch User from the Backend API.
      * Will also set the global User variable
      */
-    //     async fetchUser() {
-    //       let user: UserVar = null;
-    //       return api
-    //         .get('/user')
-    //         .then(async (response) => {
-    //           const result = response.data;
-    //           const { data, error } = await supabase
-    //             .from('users')
-    //             .select('id, name, username, email')
-    //             .eq('email', result.data.email)
-    //             .single();
-    //           if (error) {
-    //             throw error;
-    //           }
-
-    //           user = data as User;
-    //         })
-    //         .catch((error) => console.log(error))
-    //         .finally(() => this.setUser(user));
-    //     },
+    async fetchUser() {
+      let user: UserVar = null;
+      return api
+        .post(
+          "/slashdb2",
+          {
+            endpoint: "smdcBisiGetSellerV2",
+            data: { seller_user: "julius.susento@cp.co.id" },
+          },
+          {
+            headers: {
+              Authorization: "61527b29:xbywj5nnme24x326ng9oqj2gnrktqm6j",
+            },
+          }
+        )
+        .then(async (response) => {
+          let result = response.data.response[0];
+          if (result.seller_id) {
+            user = result as User;
+          }
+        })
+        .catch((error) => console.log(error))
+        .finally(() => this.setUser(user));
+    },
 
     //     /** Fetch Token from Local Storage. Will also set the global Token variable */
-    //     async fetchToken() {
-    //       await this.setToken(LocalStorage.getItem(tokenStorageName));
-    //       return Promise.resolve(this.token);
-    //     },
+    async fetchToken() {
+      await this.setToken(LocalStorage.getItem(tokenStorageName));
+      return Promise.resolve(this.token);
+    },
 
     //     /** Set the global Authentication Token */
-    //     async setToken(token: TokenVar, handleUser = false) {
-    //       this.token = token;
-    //       if (token) {
-    //         LocalStorage.set(tokenStorageName, token);
-    //         api.defaults.headers.common['Authorization'] = 'Bearer ' + token;
-    //         if (handleUser) {
-    //           await this.fetchUser();
-    //         }
-    //       } else {
-    //         LocalStorage.remove(tokenStorageName);
-    //         delete api.defaults.headers.common['Cookie'];
-    //         delete api.defaults.headers.common['Authorization'];
-    //         if (handleUser) {
-    //           this.setUser(null);
-    //         }
-    //       }
-    //     },
+    async setToken(token: TokenVar, handleUser = false) {
+      this.token = token;
+      if (token) {
+        LocalStorage.set(tokenStorageName, token);
+        // api.defaults.headers.common["Authorization"] = "Bearer " + token;
+        if (handleUser) {
+          await this.fetchUser();
+        }
+      } else {
+        LocalStorage.remove(tokenStorageName);
+        delete api.defaults.headers.common["Cookie"];
+        delete api.defaults.headers.common["Authorization"];
+        if (handleUser) {
+          this.setUser(null);
+        }
+      }
+    },
 
     //     /** Set the global User variable */
-    //     setUser(user: UserVar) {
-    //       this.user = user;
-    //     },
+    setUser(user: UserVar) {
+      this.user = user;
+    },
 
     //     async fetchRoles() {
     //       return supabase

@@ -55,6 +55,14 @@
 
             <q-item-section> Contact Us </q-item-section>
           </q-item>
+
+          <q-item clickable v-ripple @click="handleLogout">
+            <q-item-section avatar>
+              <q-icon name="logout" />
+            </q-item-section>
+
+            <q-item-section> Log Out </q-item-section>
+          </q-item>
         </q-list>
       </q-scroll-area>
 
@@ -67,9 +75,10 @@
           <q-avatar size="56px" class="q-mb-sm">
             <img src="https://cdn.quasar.dev/img/boy-avatar.png" />
           </q-avatar>
-          <div class="text-weight-bold">Front Back Name</div>
-          <div>user@email.com</div>
-          <div>User Roles</div>
+          <div class="text-weight-bold">{{ user.seller_name }}</div>
+          <div>{{ user.seller_user }} - {{ user.seller_org }}</div>
+          <!-- <div>{{ JSON.stringify(user.userLevel.parvw) }}</div> -->
+          <div>test -{{ userLevelParvw }}</div>
         </div>
       </q-img>
       <!-- END -->
@@ -141,19 +150,47 @@
 </template>
 
 <script>
-import { ref } from "vue";
+import { ref, onMounted } from "vue";
+import { useAuthStore } from "src/stores/auth";
 
 export default {
   setup() {
+    const authStore = useAuthStore();
+    const { logout, user, userLevel } = authStore;
+
     const leftDrawerOpen = ref(false);
     const rightDrawerOpen = ref(false);
+    const userLevelParvw = ref("");
+    // const tempRole = userLevel.;
+    // const userRole = ref(null); // Create a reactive state for the user role
+
+    const handleLogout = () => {
+      // Call the logout action
+      console.log(user);
+      logout();
+    };
+    const findUserLevelById = () => {
+      console.log("------");
+      console.log(userLevel);
+      const level = userLevel.find((item) => item.id === user.seller_id);
+      console.log("-----fwfww-----");
+      console.log(level.parvw ? level.parvw : "Test");
+      return level.parvw ? level.parvw : "Test";
+    };
+    onMounted(() => {
+      // Call the method to find the user level by ID after the component is mounted
+      userLevelParvw.value = findUserLevelById();
+      console.log(userLevelParvw.value);
+    });
 
     return {
+      handleLogout: handleLogout,
+      user: user,
       leftDrawerOpen,
       toggleLeftDrawer() {
         leftDrawerOpen.value = !leftDrawerOpen.value;
       },
-
+      userLevelParvw,
       rightDrawerOpen,
       toggleRightDrawer() {
         rightDrawerOpen.value = !rightDrawerOpen.value;
