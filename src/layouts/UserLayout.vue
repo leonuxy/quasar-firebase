@@ -77,8 +77,7 @@
           </q-avatar>
           <div class="text-weight-bold">{{ user.seller_name }}</div>
           <div>{{ user.seller_user }} - {{ user.seller_org }}</div>
-          <!-- <div>{{ JSON.stringify(user.userLevel.parvw) }}</div> -->
-          <div>test -{{ userLevelParvw }}</div>
+          <div>{{ userLevelParvw }}</div>
         </div>
       </q-img>
       <!-- END -->
@@ -149,53 +148,56 @@
   </q-layout>
 </template>
 
-<script>
+<script setup>
 import { ref, onMounted } from "vue";
 import { useAuthStore } from "src/stores/auth";
 
-export default {
-  setup() {
-    const authStore = useAuthStore();
-    const { logout, user, userLevel } = authStore;
+const authStore = useAuthStore();
+const { logout, user, userLevel } = authStore;
 
-    const leftDrawerOpen = ref(false);
-    const rightDrawerOpen = ref(false);
-    const userLevelParvw = ref("");
-    // const tempRole = userLevel.;
-    // const userRole = ref(null); // Create a reactive state for the user role
+const leftDrawerOpen = ref(false);
+const rightDrawerOpen = ref(false);
+const userLevelParvw = ref("");
 
-    const handleLogout = () => {
-      // Call the logout action
-      console.log(user);
-      logout();
-    };
-    const findUserLevelById = () => {
-      console.log("------");
-      console.log(userLevel);
-      const level = userLevel.find((item) => item.id === user.seller_id);
-      console.log("-----fwfww-----");
-      console.log(level.parvw ? level.parvw : "Test");
-      return level.parvw ? level.parvw : "Test";
-    };
-    onMounted(() => {
-      // Call the method to find the user level by ID after the component is mounted
-      userLevelParvw.value = findUserLevelById();
-      console.log(userLevelParvw.value);
-    });
+const handleLogout = () => {
+  // Call the logout action
+  console.log(user);
+  logout();
+};
 
-    return {
-      handleLogout: handleLogout,
-      user: user,
-      leftDrawerOpen,
-      toggleLeftDrawer() {
-        leftDrawerOpen.value = !leftDrawerOpen.value;
-      },
-      userLevelParvw,
-      rightDrawerOpen,
-      toggleRightDrawer() {
-        rightDrawerOpen.value = !rightDrawerOpen.value;
-      },
-    };
-  },
+// List of Indexed Array for each Roles.
+const roleList = {
+  Z0: "Agronomist",
+  Z1: "Marketing Executive",
+  Z2: "Area Manager",
+  Z3: "Regional Head",
+  Z4: "PMD",
+  Z5: "Customer Service",
+};
+
+// Find The Logged Role Account
+const findUserLevelById = () => {
+  const level = userLevel.find((item) => item.id === user.seller_id)
+    ? userLevel.find((item) => item.id === user.seller_id)
+    : -1;
+  return level.parvw ? getRoleByKey(`${level?.parvw}`) : "Unknown";
+};
+
+// Method to get role by key
+const getRoleByKey = (key) => {
+  return roleList[key] || "Not found";
+};
+
+onMounted(() => {
+  // Call the method to find the user level by ID after the component is mounted
+  userLevelParvw.value = findUserLevelById();
+});
+
+const toggleLeftDrawer = () => {
+  leftDrawerOpen.value = !leftDrawerOpen.value;
+};
+
+const toggleRightDrawer = () => {
+  rightDrawerOpen.value = !rightDrawerOpen.value;
 };
 </script>

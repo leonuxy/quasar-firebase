@@ -11,7 +11,7 @@
       row-key="index"
       title="List Request"
       selection="multiple"
-      :rows="tempApproval"
+      :rows="rows"
       :columns="columns"
       ><template v-slot:top-right>
         <q-input
@@ -41,32 +41,22 @@
       <template v-slot:body-cell-action="props">
         <!-- test -->
         <!-- cell-[name/field] -->
-        <q-td :props="props.value">
+        <q-td :props="props">
           <!-- <div> -->
-          <div class="column">
-            <q-btn
-              v-if="props.row.edit_button"
-              size="sm"
-              class="col q-ml-md"
-              label="Edit"
-              color="primary"
-              @click="dialogNew = true"
-            />
-            <q-btn
-              size="sm"
-              class="col q-ml-md"
-              label="Approve"
-              color="green"
-              @click="dialogNew = true"
-            />
-            <q-btn
-              size="sm"
-              class="col q-ml-md"
-              label="Reject"
-              color="red"
-              @click="dialogNew = true"
-            />
-          </div>
+          <q-btn
+            v-if="props.row.status == 'On Requested'"
+            size="sm"
+            class="q-ml-md"
+            label="Approve"
+            color="primary"
+          />
+          <q-btn
+            v-if="props.row.status == 'On Requested'"
+            size="sm"
+            class="q-ml-md"
+            label="Reject"
+            color="red"
+          />
           <!-- <q-badge color="primary" label="test" /> -->
           <!-- </div> -->
         </q-td>
@@ -111,7 +101,7 @@
   <q-dialog v-model="dialogNew">
     <q-card style="width: 700px; max-width: 80vw">
       <q-card-section class="row items-center q-pb-none">
-        <div class="text-h6">Form Edit Request Sample</div>
+        <div class="text-h6">Form New Request Sample</div>
         <q-space />
         <q-btn icon="close" flat round dense v-close-popup />
       </q-card-section>
@@ -186,16 +176,8 @@
 import { ref, onMounted } from "vue";
 import { collection, query, where, getDocs } from "firebase/firestore";
 import { db } from "src/boot/firebase";
-import { useAuthStore } from "src/stores/auth";
-const authStore = useAuthStore();
-const { logout, user, userLevel } = authStore;
 
 const columns = [
-  {
-    name: "index",
-    label: "IDS",
-    field: "index",
-  },
   {
     name: "action",
     align: "center",
@@ -211,49 +193,33 @@ const columns = [
     sortable: true,
   },
   {
-    name: "document_number",
-    align: "center",
-    label: "Document Number",
-    field: "actui",
-    sortable: true,
+    name: "index",
+    label: "IDS",
+    field: "index",
   },
   {
     name: "name",
     required: true,
     label: "Applicant's Name",
     align: "left",
-    field: "nama_pemohon",
+    field: (row) => row.name,
+    format: (val) => `${val}`,
     sortable: true,
   },
   {
-    name: "request_date",
+    name: "dept",
     required: true,
-    label: "Request Date",
+    label: "Department",
     align: "left",
-    field: "zdate",
+    field: "dept",
     sortable: true,
   },
-  {
-    name: "purpose_request",
-    align: "center",
-    label: "Purpose Sampe Request",
-    field: "tujuan_penggunaan",
-    sortable: true,
-  },
-  // {
-  //   name: "dept",
-  //   required: true,
-  //   label: "Department",
-  //   align: "left",
-  //   field: "dept",
-  //   sortable: true,
-  // },
   {
     name: "type_product",
     required: true,
     label: "Type Product(Varietas)",
     align: "left",
-    field: "jenis_produk",
+    field: "type_product",
     sortable: true,
   },
   {
@@ -261,22 +227,29 @@ const columns = [
     required: true,
     label: "Packaging",
     align: "left",
-    field: "kemasan",
+    field: "packaging",
     sortable: true,
   },
   {
-    name: "qty_request",
+    name: "qty",
     required: true,
-    label: "Qty Request",
+    label: "Qty",
     align: "left",
-    field: "quantity",
+    field: "qty",
     sortable: true,
   },
   {
     name: "area_request",
     align: "center",
-    label: "Qty Edit",
-    field: "quantity_edit",
+    label: "Area Request",
+    field: "area_request",
+    sortable: true,
+  },
+  {
+    name: "purpose_request",
+    align: "center",
+    label: "Purpose Sampe Request",
+    field: "purpose_request",
     sortable: true,
   },
 ];
@@ -495,6 +468,53 @@ const rows = ref([]);
 
 // Fetch data from Firestore on component mount
 // Function to fetch subcollection data
+const fetchSubcollectionData = async (docId) => {
+  console.log("subcollection");
+  console.log(docId);
+  const subcollectionSnapshot = await getDocs(
+    collection(db, `approvalDD/${docId}/${docId}`)
+  );
+  const subcollectionData = [];
+  subcollectionSnapshot.forEach((doc) => {
+    subcollectionData.push({ ...doc.data(), id: doc.id });
+  });
+  return subcollectionData;
+};
+
+onMounted(async () => {
+  try {
+    console.log("fetch masuk");
+    const querySnapshot = await getDocs(collection(db, "approvalDD/")); // Replace "your-collection-name" with your actual collection name
+    const fetchedRows = [];
+    const insertedId = new Set();
+    const promises = [];
+    // console.log;
+    for (const doc of querySnapshot.docs) {
+      const data = { ...doc.data(), id: doc.id };
+      promises.push(
+        new Promise(async (resolve) => {
+          data.subcollection = await fetchSubcollectionData(doc.id); // Fetch subcollection data
+          resolve(data);
+        })
+      );
+    }
+
+    const items = await Promise.all(promises);
+    for (const item of items) {
+      const { id } = item;
+      if (!insertedId.has(id)) {
+        fetchedRows.push(item);
+        insertedId.add(id);
+      }
+    }
+
+    rows.value = fetchedRows;
+    console.log(fetchedRows);
+    // rows.value = fetchedRows;
+  } catch (error) {
+    console.error("Error fetching data from Firestore:", error);
+  }
+});
 
 // Define reactive state variables
 const text = ref("");
@@ -514,27 +534,6 @@ const closeDialogSearch = () => {
 const closeDialogNew = () => {
   dialogNew.value = false;
 };
-
-const tempApproval = ref([]);
-const fetchItems = async () => {
-  try {
-    const querySnapshot = await getDocs(
-      collection(db, "approvalDD" + "/" + user.seller_id + "/" + user.seller_id)
-    );
-    tempApproval.value = querySnapshot.docs.map((doc) => ({
-      id: doc.id,
-      edit_button: doc.data().aprov_pmd === "" ? true : false,
-      ...doc.data(),
-    }));
-  } catch (error) {
-    console.error("Error fetching collection: ", error);
-  }
-};
-console.log("ok");
-console.log(user.seller_id);
-console.log(tempApproval);
-
-onMounted(fetchItems);
 </script>
 
 <style lang="sass">

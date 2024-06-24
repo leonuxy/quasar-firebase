@@ -4,7 +4,14 @@ import { api } from "src/boot/axios";
 // import { supabase } from "src/boot/supabase";
 
 import { db } from "src/boot/firebase";
-import { QuerySnapshot, collection, getDocs } from "firebase/firestore";
+import {
+  QuerySnapshot,
+  collection,
+  getDocs,
+  doc,
+  query,
+  where,
+} from "firebase/firestore";
 /** Interface for User */
 export interface User {
   seller_id: string;
@@ -131,17 +138,33 @@ export const useAuthStore = defineStore("user", {
 
     async fetchUserLevel() {
       try {
-        const collectionRef = collection(
-          db,
-          "userlevel/" + this.user.seller_id + "/" + this.user.seller_id
-        );
-        const querySnapshot = await getDocs(collectionRef);
-        this.userLevel = querySnapshot.docs.map((doc) => ({
-          id: doc.id,
-          ...doc.data(),
-        }));
+        if (this.user) {
+          const collectionRef = collection(
+            db,
+            "userlevel/" + this.user.seller_id + "/" + this.user.seller_id
+          );
+          const querySnapshot = await getDocs(collectionRef);
+          this.userLevel = querySnapshot.docs.map((doc) => ({
+            id: doc.id,
+            ...doc.data(),
+          }));
+        }
       } catch (error) {
         console.error("Error fetching data: ", error);
+      }
+    },
+
+    async isMADC(collectionName) {
+      try {
+        const q = query(
+          collection(db, "userlevel/" + collectionName + "/" + collectionName)
+        );
+        const querySnapshot = await getDocs(q);
+        return querySnapshot.empty;
+        // return doc.exists;
+      } catch (error) {
+        console.error("Error checking document existence:", error);
+        return false;
       }
     },
     /**
@@ -155,7 +178,7 @@ export const useAuthStore = defineStore("user", {
           "/slashdb2",
           {
             endpoint: "smdcBisiGetSellerV2",
-            data: { seller_user: "julius.susento@cp.co.id" },
+            data: { seller_user: this.token },
           },
           {
             headers: {
@@ -165,8 +188,14 @@ export const useAuthStore = defineStore("user", {
         )
         .then(async (response) => {
           let result = response.data.response[0];
-          if (result.seller_id) {
+          const checkMadc = await this.isMADC(result.seller_id);
+          // console.log(checkMadc);
+          if (result.seller_id && !checkMadc) {
+            // if (result.seller_id && !this.isMADC(result.seller_id)) {
+            // this.isMADC(result.seller_id);
             user = result as User;
+          } else {
+            LocalStorage.remove(tokenStorageName);
           }
         })
         .catch((error) => console.log(error))
