@@ -50,7 +50,7 @@
               class="col q-ml-md"
               label="Edit"
               color="primary"
-              @click="dialogNew = true"
+              @click="dialogEdit(props.row)"
             />
             <q-btn
               size="sm"
@@ -71,11 +71,8 @@
           <!-- </div> -->
         </q-td>
       </template>
-      <template v-slot:body-cell-area_request="props">
-        <!-- test -->
-        <!-- cell-[name/field] -->
+      <!-- <template v-slot:body-cell-area_request="props">
         <q-td :props="props">
-          <!-- <div> -->
           <q-input
             v-model.number="props.row[props.col.name]"
             input-class="text-right"
@@ -87,10 +84,8 @@
               props.row.status == 'On Requested'
             "
           />
-          <!-- <q-badge color="primary" label="test" /> -->
-          <!-- </div> -->
         </q-td>
-      </template>
+      </template> -->
     </q-table>
     <!-- :filter="filter" -->
     <!-- <template v-slot:top-right>
@@ -110,38 +105,106 @@
 
   <q-dialog v-model="dialogNew">
     <q-card style="width: 700px; max-width: 80vw">
-      <q-card-section class="row items-center q-pb-none">
-        <div class="text-h6">Form Edit Request Sample</div>
-        <q-space />
-        <q-btn icon="close" flat round dense v-close-popup />
-      </q-card-section>
+      <q-form @submit.prevent="updateForm">
+        <q-card-section class="row items-center q-pb-none">
+          <div class="text-h6">Form Edit Request Sample <br /></div>
+          <q-space />
+          <q-btn icon="close" flat round dense v-close-popup />
+        </q-card-section>
 
-      <q-card-section>
-        <q-input
-          class="q-mt-sm"
-          outlined
-          v-model="text"
-          label="Applicant's Name"
-        />
-        <q-input class="q-mt-sm" outlined v-model="text" label="Department" />
-        <q-input class="q-mt-sm" outlined v-model="text" label="Type Product" />
-        <q-input class="q-mt-sm" outlined v-model="text" label="Qty" />
-        <q-input class="q-mt-sm" outlined v-model="text" label="Area Request" />
-        <q-input
-          class="q-mt-sm"
-          outlined
-          v-model="text"
-          label="Purpose Request"
-        />
-        <q-input class="q-mt-sm" outlined v-model="text" label="Request Qty" />
-      </q-card-section>
+        <q-card-section>
+          <q-input
+            class="q-mt-sm"
+            outlined
+            v-model="selectedRows.id"
+            readonly
+            label="Document Number"
+          />
+          <q-input
+            class="q-mt-sm"
+            outlined
+            v-model="selectedRows.nama_pemohon"
+            readonly
+            label="Applicant's Name"
+          />
+          <q-input
+            class="q-mt-sm"
+            outlined
+            v-model="selectedRows.zdate"
+            readonly
+            label="Request Date"
+          />
+          <q-input
+            class="q-mt-sm"
+            outlined
+            v-model="selectedRows.jenis_produk"
+            readonly
+            label="Type Product(Varietas)"
+          />
+          <q-input
+            class="q-mt-sm"
+            outlined
+            v-model="selectedRows.tujuan_penggunaan"
+            readonly
+            label="Purpose Sample Request"
+          />
+          <q-input
+            class="q-mt-sm"
+            outlined
+            v-model="selectedRows.area_request"
+            readonly
+            label="Area Request"
+          />
+          <q-input
+            class="q-mt-sm"
+            outlined
+            v-model="selectedRows.quantity"
+            readonly
+            label="Quantity Original"
+          />
+          <q-input
+            class="q-mt-sm"
+            outlined
+            v-model="selectedRows.kemasan"
+            readonly
+            label="Packaging"
+          />
+          <br />
 
-      <q-separator />
+          <q-input
+            class="q-mt-sm mt-lg"
+            outlined
+            v-model="selectedRows.tujuan_penggunaan_edit"
+            label="Edit Purpose Sample Request"
+          />
+          <q-input
+            class="q-mt-sm"
+            outlined
+            v-model="selectedRows.area_request_edit"
+            label="Edit Area Request"
+          />
+          <q-input
+            class="q-mt-sm"
+            type="number"
+            outlined
+            v-model="selectedRows.quantity_edit"
+            label="Edit Quantity Original"
+          />
+          <q-input
+            class="q-mt-sm"
+            outlined
+            v-model="selectedRows.kemasan_edit"
+            label="Edit Packaging"
+          />
+        </q-card-section>
 
-      <q-card-actions align="right">
-        <q-btn flat @click="closeDialogNew">Back</q-btn>
-        <q-btn color="green-9" @click="closeDialogNew">Create</q-btn>
-      </q-card-actions>
+        <q-separator />
+
+        <q-card-actions align="right">
+          <q-btn color="green-9" @click="closeDialogNew">Back</q-btn>
+          <q-btn flat type="submit">EDIT REQUEST</q-btn>
+        </q-card-actions>
+      </q-form>
     </q-card>
   </q-dialog>
   <q-dialog v-model="dialogSearch">
@@ -184,35 +247,38 @@
 
 <script setup>
 import { ref, onMounted } from "vue";
-import { collection, query, where, getDocs } from "firebase/firestore";
+import {
+  collection,
+  query,
+  where,
+  getDocs,
+  doc,
+  setDoc,
+} from "firebase/firestore";
 import { db } from "src/boot/firebase";
 import { useAuthStore } from "src/stores/auth";
+
 const authStore = useAuthStore();
 const { logout, user, userLevel } = authStore;
 
 const columns = [
   {
-    name: "index",
-    label: "IDS",
-    field: "index",
-  },
-  {
     name: "action",
-    align: "center",
+    align: "left",
     label: "Action",
     field: "action",
     sortable: false,
   },
   {
     name: "status",
-    align: "center",
+    align: "left",
     label: "Status",
     field: "status",
     sortable: true,
   },
   {
     name: "document_number",
-    align: "center",
+    align: "left",
     label: "Document Number",
     field: "actui",
     sortable: true,
@@ -234,26 +300,33 @@ const columns = [
     sortable: true,
   },
   {
-    name: "purpose_request",
-    align: "center",
-    label: "Purpose Sampe Request",
-    field: "tujuan_penggunaan",
-    sortable: true,
-  },
-  // {
-  //   name: "dept",
-  //   required: true,
-  //   label: "Department",
-  //   align: "left",
-  //   field: "dept",
-  //   sortable: true,
-  // },
-  {
     name: "type_product",
     required: true,
     label: "Type Product(Varietas)",
     align: "left",
     field: "jenis_produk",
+    sortable: true,
+  },
+  {
+    name: "purpose_request",
+    align: "left",
+    label: "Purpose Sampe Request",
+    field: "tujuan_penggunaan",
+    sortable: true,
+  },
+  {
+    name: "area_request",
+    align: "left",
+    label: "Area Request",
+    field: "area_request",
+    sortable: true,
+  },
+  {
+    name: "quantity",
+    required: true,
+    label: "Quantity",
+    align: "left",
+    field: "quantity",
     sortable: true,
   },
   {
@@ -265,222 +338,34 @@ const columns = [
     sortable: true,
   },
   {
-    name: "qty_request",
-    required: true,
-    label: "Qty Request",
+    name: "purpose_request_edit",
     align: "left",
-    field: "quantity",
+    label: "Edit Purpose Sampe Request",
+    field: "tujuan_penggunaan_edit",
     sortable: true,
   },
   {
-    name: "area_request",
-    align: "center",
-    label: "Qty Edit",
+    name: "area_request_edit",
+    align: "left",
+    label: "Edit Area Request",
+    field: "area_request_edit",
+    sortable: true,
+  },
+  {
+    name: "quantity_edit",
+    required: true,
+    label: "Edit Quantity",
+    align: "left",
     field: "quantity_edit",
     sortable: true,
   },
-];
-
-const seed = [
   {
-    name: "Tendi W",
-    dept: "Marketing Executive",
-    type_product: "Tembakau",
-    packaging: "Pack",
-    qty: 2,
-    area_request: 5,
-    purpose_request: "Checking Quality",
-    status: "Rejected",
-  },
-  {
-    name: "Jul W",
-    dept: "Agro",
-    type_product: "Biji Kopi",
-    packaging: "Pack",
-    qty: 1,
-    area_request: 5,
-    purpose_request: "Checking Quality",
-    status: "On Requested",
-  },
-  {
-    name: "Jul W",
-    dept: "Agro",
-    type_product: "Pok Choy",
-    packaging: "Pack",
-    qty: 13,
-    area_request: 5,
-    purpose_request: "Checking Quality",
-    status: "On Request",
-  },
-  {
-    name: "Arif H",
-    dept: "Logistics",
-    type_product: "Teh Hijau",
-    packaging: "Box",
-    qty: 4,
-    area_request: 3,
-    purpose_request: "Stock Replenishment",
-    status: "Approved",
-  },
-  {
-    name: "Rina S",
-    dept: "Quality Assurance",
-    type_product: "Kopi Bubuk",
-    packaging: "Bag",
-    qty: 10,
-    area_request: 2,
-    purpose_request: "Quality Testing",
-    status: "On Requested",
-  },
-  {
-    name: "Andi P",
-    dept: "Procurement",
-    type_product: "Gula Aren",
-    packaging: "Jar",
-    qty: 8,
-    area_request: 4,
-    purpose_request: "Supplier Evaluation",
-    status: "Approved",
-  },
-  {
-    name: "Budi K",
-    dept: "Sales",
-    type_product: "Jahe Merah",
-    packaging: "Pack",
-    qty: 5,
-    area_request: 1,
-    purpose_request: "Sales Sample",
-    status: "Approved",
-  },
-  {
-    name: "Cici R",
-    dept: "Marketing Executive",
-    type_product: "Tembakau",
-    packaging: "Pack",
-    qty: 6,
-    area_request: 5,
-    purpose_request: "Product Demonstration",
-    status: "Approved",
-  },
-  {
-    name: "Dewi L",
-    dept: "Agro",
-    type_product: "Biji Kopi",
-    packaging: "Sack",
-    qty: 12,
-    area_request: 6,
-    purpose_request: "Export Preparation",
-    status: "Approved",
-  },
-  {
-    name: "Eko B",
-    dept: "Finance",
-    type_product: "Pok Choy",
-    packaging: "Pack",
-    qty: 3,
-    area_request: 5,
-    purpose_request: "Budget Planning",
-    status: "Approved",
-  },
-  {
-    name: "Fani T",
-    dept: "Operations",
-    type_product: "Teh Hijau",
-    packaging: "Box",
-    qty: 7,
-    area_request: 3,
-    purpose_request: "Operational Use",
-    status: "Approved",
-  },
-  {
-    name: "Gilang M",
-    dept: "Logistics",
-    type_product: "Kopi Bubuk",
-    packaging: "Bag",
-    qty: 9,
-    area_request: 4,
-    purpose_request: "Warehouse Stock",
-    status: "Approved",
-  },
-  {
-    name: "Hana S",
-    dept: "Quality Assurance",
-    type_product: "Gula Aren",
-    packaging: "Jar",
-    qty: 11,
-    area_request: 2,
-    purpose_request: "Quality Control",
-    status: "Approved",
-  },
-  {
-    name: "Irwan D",
-    dept: "Procurement",
-    type_product: "Jahe Merah",
-    packaging: "Pack",
-    qty: 15,
-    area_request: 1,
-    purpose_request: "New Supplier Testing",
-    status: "Approved",
-  },
-  {
-    name: "Joko E",
-    dept: "Sales",
-    type_product: "Tembakau",
-    packaging: "Pack",
-    qty: 14,
-    area_request: 5,
-    purpose_request: "Market Research",
-    status: "Approved",
-  },
-  {
-    name: "Kiki H",
-    dept: "Marketing Executive",
-    type_product: "Biji Kopi",
-    packaging: "Pack",
-    qty: 16,
-    area_request: 6,
-    purpose_request: "Client Meeting",
-    status: "Approved",
-  },
-  {
-    name: "Lina J",
-    dept: "Agro",
-    type_product: "Pok Choy",
-    packaging: "Pack",
-    qty: 18,
-    area_request: 3,
-    purpose_request: "Harvest Quality Check",
-    status: "Approved",
-  },
-  {
-    name: "Mita P",
-    dept: "Logistics",
-    type_product: "Teh Hijau",
-    packaging: "Box",
-    qty: 20,
-    area_request: 4,
-    purpose_request: "Shipment Preparation",
-    status: "Approved",
-  },
-  {
-    name: "Nina Q",
-    dept: "Quality Assurance",
-    type_product: "Kopi Bubuk",
-    packaging: "Bag",
-    qty: 22,
-    area_request: 2,
-    purpose_request: "Inspection",
-    status: "Approved",
-  },
-  {
-    name: "Oki R",
-    dept: "Procurement",
-    type_product: "Gula Aren",
-    packaging: "Jar",
-    qty: 24,
-    area_request: 1,
-    purpose_request: "Procurement Audit",
-    status: "Approved",
+    name: "packaging_edit",
+    required: true,
+    label: "Edit Packaging",
+    align: "left",
+    field: "kemasan_edit",
+    sortable: true,
   },
 ];
 
@@ -530,11 +415,38 @@ const fetchItems = async () => {
     console.error("Error fetching collection: ", error);
   }
 };
+
+const updateForm = async () => {
+  try {
+    const updateRef = doc(
+      db,
+      "approvalDD" +
+        "/" +
+        user.seller_id +
+        "/" +
+        user.seller_id +
+        "/22000803APR20240622233639"
+    );
+    setDoc(updateRef, { tujuan_penggunaan_edit: "leon_test" }, { merge: true });
+
+    console.log("Document successfully updated!");
+  } catch (error) {
+    console.error("Error updating document:", error);
+    throw error;
+  }
+};
 console.log("ok");
 console.log(user.seller_id);
 console.log(tempApproval);
 
+const selectedRows = ref({});
 onMounted(fetchItems);
+
+const dialogEdit = (row) => {
+  selectedRows.value = row;
+  console.log(selectedRows.value);
+  dialogNew.value = true;
+};
 </script>
 
 <style lang="sass">
