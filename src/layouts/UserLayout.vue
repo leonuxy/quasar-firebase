@@ -131,7 +131,7 @@
     </q-drawer>
 
     <!-- this is where the Pages are injected -->
-    <q-page-container>
+    <q-page-container :userLevelZ="userLevelZ.value">
       <router-view></router-view>
     </q-page-container>
 
@@ -158,6 +158,7 @@ const { logout, user, userLevel } = authStore;
 const leftDrawerOpen = ref(false);
 const rightDrawerOpen = ref(false);
 const userLevelParvw = ref("");
+const userLevelZ = ref("");
 
 const handleLogout = () => {
   // Call the logout action
@@ -173,6 +174,7 @@ const roleList = {
   Z3: "Regional Head",
   Z4: "PMD",
   Z5: "Customer Service",
+  Z6: "Admin",
 };
 
 // Find The Logged Role Account
@@ -180,6 +182,8 @@ const findUserLevelById = () => {
   const level = userLevel.find((item) => item.id === user.seller_id)
     ? userLevel.find((item) => item.id === user.seller_id)
     : -1;
+
+  userLevelZ.value = level.parvw;
   return level.parvw ? getRoleByKey(`${level?.parvw}`) : "Unknown";
 };
 

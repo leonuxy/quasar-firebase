@@ -11,6 +11,7 @@ export default boot(async ({ store, router }) => {
 
     // if (authStore.user) {
     await authStore.fetchUserLevel();
+    await authStore.myUserNextUser();
     //   await authStore.fetchRoles();
     //   await authStore.fetchPermissions();
     //   if (authStore.hasPermissions({ "use-role-companies": true })) {

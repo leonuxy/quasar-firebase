@@ -52,12 +52,14 @@
               color="primary"
               @click="dialogEdit(props.row)"
             />
+            <!-- <template v-if="ar_button_pmd"> -->
             <q-btn
+            v-if()
               size="sm"
               class="col q-ml-md"
               label="Approve"
               color="green"
-              @click="dialogNew = true"
+              @click="dialogConfirm(props.row, 0)"
             />
             <q-btn
               size="sm"
@@ -66,6 +68,7 @@
               color="red"
               @click="dialogNew = true"
             />
+            <!-- </template> -->
           </div>
           <!-- <q-badge color="primary" label="test" /> -->
           <!-- </div> -->
@@ -102,6 +105,30 @@
         </q-input>
       </template> -->
   </div>
+  <q-dialog v-model="dialogShowConfirm">
+    <q-card style="width: 500px; max-width: 80vw">
+      <q-card-section>
+        <div class="text-h6">
+          {{ dConfirm.dTitle }}
+        </div>
+
+        <p>
+          {{ dConfirm.dMessage }}
+        </p>
+      </q-card-section>
+
+      <q-separator />
+
+      <q-card-actions align="right">
+        <q-btn :color="dConfirm.dColor" @click="closeDialogShowConfirm()"
+          >Cancel</q-btn
+        >
+        <q-btn flat @click="handleConfirmLink">{{
+          dConfirm.dLabelButton
+        }}</q-btn>
+      </q-card-actions>
+    </q-card>
+  </q-dialog>
 
   <q-dialog v-model="dialogNew">
     <q-card style="width: 700px; max-width: 80vw">
@@ -259,7 +286,7 @@ import { db } from "src/boot/firebase";
 import { useAuthStore } from "src/stores/auth";
 
 const authStore = useAuthStore();
-const { logout, user, userLevel } = authStore;
+const { logout, user, userLevel, userNext } = authStore;
 
 const columns = [
   {
@@ -402,32 +429,111 @@ const closeDialogNew = () => {
 
 const tempApproval = ref([]);
 const fetchItems = async () => {
+  userLevelZ.value = userNext[0].parvw;
   try {
     const querySnapshot = await getDocs(
       collection(db, "approvalDD" + "/" + user.seller_id + "/" + user.seller_id)
     );
     tempApproval.value = querySnapshot.docs.map((doc) => ({
       id: doc.id,
-      edit_button: doc.data().aprov_pmd === "" ? true : false,
+      edit_button: doc.data().aprov_pmd === "" && userLevelZ.value === "Z4",
+      // ar_button_pmd: doc.data().aprov_pmd !== "" && userLevelZ.value === "Z4",
+      // ar_button_cs: doc.data().aprov_cs !== "" && userLevelZ.value === "Z5",
+      // ar_button_admin:
+      //   doc.data().aprov_admin !== "" && userLevelZ.value === "Z6",
       ...doc.data(),
     }));
   } catch (error) {
     console.error("Error fetching collection: ", error);
   }
 };
+const userLevelZ = ref("");
 
-const updateForm = async () => {
-  try {
-    const updateRef = doc(
+const handleUpdateAllDocument = async (approve = false, reject = false) => {
+  console.log("handle all document");
+  // Initiate the Parameter for User Logged in and all User
+  const mergeParameter = {
+    tujuan_penggunaan_edit: selectedRows.value.tujuan_penggunaan_edit,
+    quantity_edit: selectedRows.value.quantity_edit,
+    area_request_edit: selectedRows.value.area_request_edit,
+    kemasan_edit: selectedRows.value.kemasan_edit,
+    aprov_pmd: "",
+  };
+
+  if (approve) {
+    if (userLevelZ.value == "Z4") {
+      mergeParameter.aprov_pmd = "Y";
+    }
+    if (userLevelZ.value == "Z5") {
+      mergeParameter.aprov_cs = "Y";
+    }
+    if (userLevelZ.value == "Z6") {
+      mergeParameter.aprov_admin = "Y";
+    }
+  }
+
+  if (reject) {
+    if (userLevelZ.value == "Z4") {
+      mergeParameter.aprov_pmd = "N";
+    }
+    if (userLevelZ.value == "Z5") {
+      mergeParameter.aprov_cs = "N";
+    }
+    if (userLevelZ.value == "Z6") {
+      mergeParameter.aprov_admin = "N";
+    }
+  }
+
+  // Start Change The User Who Approve
+  const updateRef = doc(
+    db,
+    "approvalDD" +
+      "/" +
+      user.seller_id +
+      "/" +
+      user.seller_id +
+      "/" +
+      selectedRows.value.id
+  );
+  await setDoc(updateRef, mergeParameter, { merge: true });
+  // End Change The User Who Approve
+
+  // Reference All Document Based on User
+  const checkNik = ref([
+    { field_name: "nik_me_request", type: "Z1" },
+    { field_name: "nik_am_aprov", type: "Z2" },
+    { field_name: "nik_rh_aprov", type: "Z3" },
+    { field_name: "nik_pmd_aprov", type: "Z4" },
+    { field_name: "nik_cs_aprov", type: "Z5" },
+    { field_name: "nik_admin_aprov", type: "Z6" },
+  ]);
+
+  const finalValue = checkNik.value
+    .map((row) => ({
+      id: selectedRows.value.id,
+      directoryFolder: selectedRows.value[`${row.field_name}`],
+      field_name: row.field_name,
+    }))
+    .filter((row) => row.directoryFolder.length > 0);
+
+  finalValue.forEach((item) => {
+    const allDoc = doc(
       db,
       "approvalDD" +
         "/" +
-        user.seller_id +
+        item.directoryFolder +
         "/" +
-        user.seller_id +
-        "/22000803APR20240622233639"
+        item.directoryFolder +
+        "/" +
+        item.id
     );
-    setDoc(updateRef, { tujuan_penggunaan_edit: "leon_test" }, { merge: true });
+    setDoc(allDoc, mergeParameter, { merge: true });
+  });
+};
+
+const updateForm = async () => {
+  try {
+    await handleUpdateAllDocument(false, false);
 
     console.log("Document successfully updated!");
   } catch (error) {
@@ -444,8 +550,49 @@ onMounted(fetchItems);
 
 const dialogEdit = (row) => {
   selectedRows.value = row;
-  console.log(selectedRows.value);
+  // console.log(selectedRows.value);
   dialogNew.value = true;
+};
+
+const dConfirm = ref({
+  dTitle: "",
+  dMessage: "",
+  dDirect: "",
+  dColor: "",
+});
+
+const dialogShowConfirm = ref(false);
+
+const closeDialogShowConfirm = () => {
+  dialogShowConfirm.value = false;
+};
+
+const doApproval = async () => {
+  console.log("handle all document");
+
+  await handleUpdateAllDocument(true, false);
+};
+
+// Intermediate function to handle dynamic method call
+const handleConfirmLink = () => {
+  if (dConfirm.value.dDirect == "doApproval") {
+    doApproval();
+  }
+};
+
+const dialogConfirm = (row, type) => {
+  if (type == 0) {
+    dConfirm.value.dTitle = "Confirm Approval?";
+    dConfirm.value.dMessage = "Are you sure want to Approve this Request?";
+    dConfirm.value.dDirect = "doApproval";
+    dConfirm.value.dLabelButton = "Yes, Approve";
+    dConfirm.value.dColor = "green-9";
+
+    selectedRows.value = row;
+    dialogShowConfirm.value = true;
+  }
+  if (type == 1) {
+  }
 };
 </script>
 

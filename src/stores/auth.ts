@@ -25,10 +25,12 @@ export interface User {
 }
 
 export interface UserLevel {}
+export interface UserNext {}
 
 /** Possible User Type in Store */
 export type UserVar = User | null;
 export type UserLevelVar = UserLevel | null;
+export type UserNextVar = UserNext | null;
 
 /** Authentication Token in Store */
 export type TokenData = string;
@@ -77,6 +79,7 @@ export const useAuthStore = defineStore("user", {
     token: TokenVar;
     user: UserVar;
     userLevel: UserLevelVar;
+    userNext: UserNextVar;
     // roles: Roles;
     // permissions: Permissions;
     // roleCompanies: RoleCompanies;
@@ -86,6 +89,7 @@ export const useAuthStore = defineStore("user", {
     token: null,
     user: null,
     userLevel: {},
+    userNext: {},
     // permissions: {},
     // roleCompanies: [],
     // roleAreas: [],
@@ -148,6 +152,25 @@ export const useAuthStore = defineStore("user", {
             id: doc.id,
             ...doc.data(),
           }));
+        }
+      } catch (error) {
+        console.error("Error fetching data: ", error);
+      }
+    },
+    async myUserNextUser() {
+      try {
+        if (this.user) {
+          const collectionRef = collection(
+            db,
+            "userlevel/" + this.user.seller_id + "/" + this.user.seller_id
+          );
+          const querySnapshot = await getDocs(collectionRef);
+          this.userNext = querySnapshot.docs
+            .map((doc) => ({
+              id: doc.id,
+              ...doc.data(),
+            }))
+            .filter((row) => row.id == this.user.seller_id);
         }
       } catch (error) {
         console.error("Error fetching data: ", error);
@@ -230,6 +253,14 @@ export const useAuthStore = defineStore("user", {
     //     /** Set the global User variable */
     setUser(user: UserVar) {
       this.user = user;
+    },
+
+    setUserLevel(userLevel: UserLevelVar) {
+      this.userLevel = userLevel;
+    },
+
+    setUserNext(userNext: UserNextVar) {
+      this.userNext = userNext;
     },
 
     //     async fetchRoles() {
